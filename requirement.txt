@@ -1,0 +1,13 @@
+streamlit
+opencv-python-headless
+numpy
+easyocr
+pandas
+plotly
+pillow
+fuzzywuzzy
+python-Levenshtein
+qrcode
+requests
+torch
+torchvision
