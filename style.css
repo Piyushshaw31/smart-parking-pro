@@ -1,0 +1,170 @@
+[data-testid="stAppViewContainer"] { background: #0f172a; }
+
+.header-style { 
+    font-size: 2.2rem; 
+    font-weight: 800; 
+    color: #f8fafc; 
+    border-bottom: 3px solid #3b82f6; 
+    padding-bottom: 10px; 
+    margin-bottom: 25px; 
+}
+
+.thermal-ticket { 
+    background: #ffffff; 
+    color: #111827; 
+    padding: 30px; 
+    width: 320px; 
+    margin: 20px auto; 
+    font-family: 'Courier New', monospace; 
+    border: 1px solid #ddd; 
+    box-shadow: 8px 8px 0px #1e293b; 
+}
+
+.ticket-header { 
+    text-align: center; 
+    font-size: 1.4rem; 
+    font-weight: 900; 
+    border-bottom: 2px dashed #222; 
+    margin-bottom: 15px; 
+}
+
+.mini-map { 
+    display: grid; 
+    gap: 8px; 
+    background: #1e293b; 
+    padding: 15px; 
+    border-radius: 12px; 
+}
+
+.mini-spot { 
+    height: 50px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    border-radius: 6px; 
+    font-weight: bold; 
+    font-size: 0.8rem; 
+}
+
+.branch-card { 
+    background: rgba(30, 41, 59, 0.7); 
+    backdrop-filter: blur(10px); 
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    padding: 25px; 
+    border-radius: 16px; 
+    margin-bottom: 15px; 
+}
+
+.branch-title { 
+    font-size: 1.4rem; 
+    font-weight: 700; 
+    color: #60a5fa; 
+}
+/* --- Live Floor Map Grid --- */
+.map-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+    padding: 15px 0;
+}
+
+.spot-card {
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.spot-empty {
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+}
+
+.spot-occupied {
+    background: #10b981;
+    color: #ffffff;
+    border: 2px solid #34d399;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+}
+
+.spot-reserved {
+    background: #f59e0b;
+    color: #ffffff;
+    border: 2px solid #fbbf24;
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+}
+
+.spot-plate {
+    font-size: 0.75rem;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-top: 5px;
+    letter-spacing: 1px;
+}
+/* --- UI Locking --- */
+[data-testid="stAppViewContainer"] { background: #0f172a; }
+
+/* --- Live Floor Map Grid --- */
+.map-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+    padding: 15px 0;
+}
+
+.spot-card {
+    height: 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.spot-empty {
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+}
+
+.spot-occupied {
+    background: #10b981;
+    color: #ffffff;
+    border: 2px solid #34d399;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+}
+
+.spot-reserved {
+    background: #f59e0b;
+    color: #ffffff;
+    border: 2px solid #fbbf24;
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+}
+
+.spot-plate {
+    font-size: 0.75rem;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-top: 5px;
+    letter-spacing: 1px;
+    color: #ffffff;
+}
+
+/* --- Thermal Ticket Styling --- */
+.thermal-ticket { 
+    background: #ffffff; color: #111827; padding: 25px; 
+    width: 320px; margin: 10px auto; font-family: monospace; 
+    border: 1px solid #ddd; box-shadow: 5px 5px 0px #1e293b;
+}
