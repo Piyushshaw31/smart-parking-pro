@@ -259,12 +259,14 @@ def render_exit_gate(bid, bname):
                     # Calculate basic dummy duration and amount
                     # --- DYNAMIC TIME & RATE CALCULATION ---
                     
-                    exit_time_dt = datetime.now()
+                    IST = pytz.timezone('Asia/Kolkata')
+                    exit_time_dt = datetime.now(IST)
                     exit_time = exit_time_dt.strftime("%Y-%m-%d %H:%M:%S")
                     
                     try:
                         # Convert entry time from string to a real datetime object
                         entry_time_dt = datetime.strptime(entry_time, "%Y-%m-%d %H:%M:%S")
+                        entry_time_dt = IST.localize(entry_time_dt)
                         
                         # Calculate the exact difference in seconds
                         time_diff = exit_time_dt - entry_time_dt
