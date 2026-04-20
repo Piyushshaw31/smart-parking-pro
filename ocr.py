@@ -6,47 +6,96 @@ import streamlit as st
 
 @st.cache_resource
 def get_ocr_reader():
-    # Cache the model to stop lag
     return easyocr.Reader(['en'], gpu=False)
 
+# UPDATED: Added 'T'->'1' and 'D'->'0' to handle weird fonts/screws
+CHAR_TO_NUM = {'Z': '7', 'S': '5', 'O': '0', 'B': '8', 'I': '1', 'G': '6', 'Q': '0', 'T': '1', 'D': '0'}
+NUM_TO_CHAR = {'7': 'Z', '5': 'S', '0': 'O', '8': 'B', '1': 'I', '6': 'G', '2': 'Z'}
+
+def correct_indian_plate(text):
+    """Forces character corrections based on the Indian license plate format."""
+    if len(text) not in [9, 10]:
+        return text 
+    
+    fixed_text = list(text)
+    
+    # State Code (Indices 0, 1): Must be letters
+    for i in range(0, 2):
+        if fixed_text[i] in NUM_TO_CHAR:
+            fixed_text[i] = NUM_TO_CHAR[fixed_text[i]]
+            
+    # District Code (Indices 2, 3): Must be numbers
+    for i in range(2, 4):
+        if fixed_text[i] in CHAR_TO_NUM:
+            fixed_text[i] = CHAR_TO_NUM[fixed_text[i]]
+            
+    # Unique Number (Last 4 indices): Must be numbers
+    for i in range(len(fixed_text) - 4, len(fixed_text)):
+        if fixed_text[i] in CHAR_TO_NUM:
+            fixed_text[i] = CHAR_TO_NUM[fixed_text[i]]
+            
+    # Series (Middle indices): Must be letters
+    for i in range(4, len(fixed_text) - 4):
+        if fixed_text[i] in NUM_TO_CHAR:
+            fixed_text[i] = NUM_TO_CHAR[fixed_text[i]]
+            
+    return "".join(fixed_text)
+
+def extract_and_correct_plate(raw_text):
+    """Slides a window over the messy text to find a valid license plate."""
+    clean_text = "".join(e for e in raw_text if e.isalnum()).upper()
+    
+    # UPDATED: Strip "IND" out entirely so it doesn't interrupt two-line plates
+    clean_text = clean_text.replace("IND", "")
+    
+    pattern = re.compile(r'^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$')
+    
+    # Check all possible 10 and 9 character windows in the string
+    for window_size in [10, 9]:
+        if len(clean_text) >= window_size:
+            for i in range(len(clean_text) - window_size + 1):
+                substring = clean_text[i : i + window_size]
+                corrected = correct_indian_plate(substring)
+                
+                if pattern.match(corrected):
+                    return corrected
+    return ""
+
 def preprocess_plate(frame):
-    """Cleans the image so the AI can read it properly."""
-    # 1. Convert to Grayscale
+    """Safely cleans the image without destroying screen pixels."""
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    # 2. Enlarge the image (helps OCR read small text)
     resized = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-    # 3. Boost contrast to make black text pop against white background
-    adjusted = cv2.convertScaleAbs(resized, alpha=1.5, beta=0)
-    return adjusted
+    return resized
 
 def detect_text(frame):
     reader = get_ocr_reader()
     try:
-        # Pass the cleaned image to the AI
         processed_frame = preprocess_plate(frame)
-        
-        # 'allowlist' forces the AI to only look for A-Z and 0-9. No weird symbols.
         results = reader.readtext(processed_frame, allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
         
         if not results: 
             return ""
             
-        # Strict Indian Pattern Checker
-        pattern = re.compile(r'^[A-Z]{2}[0-9]{2}[A-Z]{0,2}[0-9]{4}$')
-        candidates = []
+        # 1. Combine everything EasyOCR saw into one string
+        combined_raw = "".join([text for (bbox, text, prob) in results])
         
+        # 2. Extract plate from noise
+        found_plate = extract_and_correct_plate(combined_raw)
+        if found_plate:
+            return found_plate
+            
+        # 3. Fallback check
+        candidates = []
         for (bbox, text, prob) in results:
             clean = "".join(e for e in text if e.isalnum()).upper()
             
-            # If it's a perfect match, return it instantly
-            if pattern.match(clean): 
-                return clean
+            # Also remove IND from the fallback checks
+            clean = clean.replace("IND", "") 
+            
+            corrected = correct_indian_plate(clean)
+            if len(corrected) >= 7 and prob > 0.4:
+                candidates.append((prob, corrected))
                 
-            # Otherwise, log it if it has good probability
-            if len(clean) >= 7 and prob > 0.4:
-                candidates.append((prob, clean))
-                
-        # Return the highest probability match if no perfect match was found
         if candidates:
             candidates.sort(key=lambda x: x[0], reverse=True)
             return candidates[0][1]

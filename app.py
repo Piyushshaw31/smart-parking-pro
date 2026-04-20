@@ -19,6 +19,12 @@ st.set_page_config(layout="wide", page_title="Smart Parking Pro", page_icon="�
 database.init_db()
 database.cleanup_ghost_bookings(minutes=30) 
 
+# --- SESSION STATE MANAGEMENT ---
+if 'blocked_plate' not in st.session_state:
+    st.session_state['blocked_plate'] = None
+if 'checkout_amount' not in st.session_state:
+    st.session_state['checkout_amount'] = 0
+
 try:
     with open('style.css') as f: 
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
@@ -239,22 +245,78 @@ def render_exit_gate(bid, bname):
         val = (st.session_state.exit_ocr or "")
         plate = st.text_input("Exit Plate Number", value=val).upper().strip()
         if st.button("Calculate Final Bill", type="primary", use_container_width=True):
-            data = database.get_vehicle(plate)
-            if data and data[0] == bid:
-                lvl = data[1]
-                spot = data[2]
-                entry_t = data[3]
+            if not plate:
+                st.error("Please enter a plate number.")
+            else:
+                vehicle_data = database.get_vehicle(plate)
                 
-                exit_t, amt, dur = parking_logic.calculate_bill(entry_t, plate)
-                database.exit_vehicle(bid, plate, exit_t, amt, dur)
-                
-                st.session_state.exit_result = (plate, lvl, spot, entry_t, exit_t, amt, dur)
-                st.session_state.entry_result = "" 
-                st.session_state.trigger_balloons = True
-                st.rerun()
-            else: 
-                st.error("Vehicle not found in this facility.")
+                if vehicle_data:
+                    branch, lvl, spot, entry_time = vehicle_data
+                    
+                    # Calculate basic dummy duration and amount
+                    base_amount = 50.0 
+                    duration = "2 hours" 
+                    exit_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    
+                    # --- FIX 1: EXPLICITLY CHECK BLACKLIST STATUS FIRST ---
+                    status = database.get_vehicle_status(plate)
+                    
+                    if status == "Blacklist":
+                        # SECURITY CHECKPOINT TRIGGERED!
+                        st.session_state['blocked_plate'] = plate
+                        st.session_state['checkout_amount'] = base_amount
+                        st.rerun() # Force a UI refresh to show the red warning
+                    else:
+                        # Attempt standard checkout for normal/VIP cars
+                        success = database.exit_vehicle(bid, plate, exit_time, base_amount, duration, guard_override=False)
+                        
+                        if success:
+                            st.success(f"Checkout Complete for {plate}. Amount Paid: ₹{base_amount}")
+                            # --- FIX 2 & 3: SET EXIT RESULT FOR BILL & TRIGGER BALLOONS ---
+                            st.session_state.exit_result = (plate, lvl, spot, entry_time, exit_time, base_amount, duration)
+                            st.session_state.trigger_balloons = True
+                            st.rerun() 
+                        else:
+                            st.error("Error processing checkout in database.")
+                else:
+                    st.warning("Vehicle not found in the active parking database.")
+        
+        # --- THE GUARD OVERRIDE UI ---
+        if st.session_state['blocked_plate'] == plate and plate != "":
+            st.error(f"🚨 **SECURITY ALERT: VEHICLE {plate} IS BLACKLISTED!** 🚨\n\nExit Denied. The gate will not open.")
+            st.warning("Admin/Guard Override Required to release vehicle.")
             
+            if st.button("Guard Override: Release & Add ₹100 Fine", type="primary"):
+                exit_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                new_total = st.session_state['checkout_amount'] + 100
+                
+                # Fetch vehicle data again to populate the receipt properly
+                vehicle_data = database.get_vehicle(plate)
+                lvl, spot, entry_time = "N/A", "N/A", "N/A"
+                if vehicle_data:
+                    _, lvl, spot, entry_time = vehicle_data
+
+                # Attempt checkout again, passing the new total and guard_override=True
+                database.exit_vehicle(
+                    bid, 
+                    plate, 
+                    exit_time, 
+                    new_total, 
+                    "2 hours", 
+                    guard_override=True
+                )
+                
+                st.success(f"Override Accepted. Vehicle Released. Total collected: ₹{new_total} (includes ₹100 fine).")
+                
+                # --- FIX 2 & 3: GENERATE RECEIPT AND BALLOONS FOR BLACKLISTED CARS TOO ---
+                st.session_state.exit_result = (plate, lvl, spot, entry_time, exit_time, new_total, "2 hours")
+                st.session_state.trigger_balloons = True
+                
+                # Clear the session state so the red box goes away
+                st.session_state['blocked_plate'] = None
+                st.rerun()
+
+    # --- THIS BLOCK RENDERS THE BILL ---
     if st.session_state.exit_result:
         p, lvl, spot, entry_t, exit_t, a, d = st.session_state.exit_result
         
