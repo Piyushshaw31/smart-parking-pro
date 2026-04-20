@@ -1,4 +1,5 @@
 import streamlit as st
+import math
 import cv2
 import numpy as np
 import sqlite3
@@ -254,9 +255,43 @@ def render_exit_gate(bid, bname):
                     branch, lvl, spot, entry_time = vehicle_data
                     
                     # Calculate basic dummy duration and amount
-                    base_amount = 50.0 
-                    duration = "2 hours" 
-                    exit_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    # --- DYNAMIC TIME & RATE CALCULATION ---
+                    
+                    exit_time_dt = datetime.now()
+                    exit_time = exit_time_dt.strftime("%Y-%m-%d %H:%M:%S")
+                    
+                    try:
+                        # Convert entry time from string to a real datetime object
+                        entry_time_dt = datetime.strptime(entry_time, "%Y-%m-%d %H:%M:%S")
+                        
+                        # Calculate the exact difference in seconds
+                        time_diff = exit_time_dt - entry_time_dt
+                        total_seconds = time_diff.total_seconds()
+                        
+                        # Format the exact duration for the receipt (e.g., "2h 15m")
+                        h = int(total_seconds // 3600)
+                        m = int((total_seconds % 3600) // 60)
+                        duration = f"{h}h {m}m"
+                        
+                        # Calculate billable hours (rounds UP to the nearest whole hour)
+                        # Example: 1 hr 5 mins becomes 2 billable hours.
+                        billable_hours = math.ceil(total_seconds / 3600)
+                        
+                        # Ensure we charge for at least 1 hour even if they just entered
+                        if billable_hours < 1:
+                            billable_hours = 1
+                            
+                        # Set your hourly rate (₹30 for Medium)
+                        hourly_rate = 30.0 
+                        
+                        # Final dynamic amount!
+                        base_amount = float(billable_hours * hourly_rate)
+                        
+                    except Exception as e:
+                        # Fallback just in case the database date format is weird
+                        base_amount = 50.0
+                        duration = "Unknown Time"
+                    # ----------------------------------------
                     
                     # --- FIX 1: EXPLICITLY CHECK BLACKLIST STATUS FIRST ---
                     status = database.get_vehicle_status(plate)
