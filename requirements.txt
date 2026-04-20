@@ -11,3 +11,4 @@ qrcode
 requests
 torch 
 torchvision
+pytz
