@@ -9,5 +9,5 @@ fuzzywuzzy
 python-Levenshtein
 qrcode
 requests
-torch
+torch 
 torchvision
