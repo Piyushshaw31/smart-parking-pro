@@ -433,7 +433,7 @@ def render_admin(bid, bname):
             with col2:
                 clean_df = df[['plate_number', 'checkout_time', 'duration', 'amount']].sort_values(by="checkout_time", ascending=False)
                 csv_data = clean_df.to_csv(index=False)
-                date_str = datetime.now().strftime('%Y-%m-%d')
+                date_str = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d %H:%M:%S")
                 
                 st.download_button(
                     label="📥 Download Raw Financial Data (CSV)",
@@ -646,7 +646,7 @@ def render_customer():
                         else:
                             lvl, spot = parking_logic.assign_slot(sz, b['id'])
                             if lvl:
-                                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                                now = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d %H:%M:%S")
                                 with sqlite3.connect('parking.db', timeout=20) as conn:
                                     conn.execute("UPDATE parking_spots SET is_reserved=1, reserved_plate=?, reserved_size=?, booking_timestamp=? WHERE branch_id=? AND level=? AND spot_id=?", (p, sz, now, b['id'], lvl, spot))
                                     conn.commit()
