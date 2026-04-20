@@ -1,4 +1,5 @@
 import streamlit as st
+import pytz
 import math
 import cv2
 import numpy as np
@@ -176,8 +177,9 @@ def render_entry_gate(bid, bname):
                             cur = conn.cursor()
                             cur.execute("SELECT level, spot_id, reserved_size FROM parking_spots WHERE branch_id=? AND reserved_plate=?", (bid, final_p))
                             resv = cur.fetchone()
-                        
-                        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                        IST = pytz.timezone('Asia/Kolkata')
+                        now = datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S")
                         
                         if resv:
                             r_lvl, r_spot, r_sz = resv
